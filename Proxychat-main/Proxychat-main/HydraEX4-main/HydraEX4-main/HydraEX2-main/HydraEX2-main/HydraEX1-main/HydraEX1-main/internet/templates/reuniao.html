@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reunião - Chat estilo Discord lateral com Voz</title>
+  <style>
+    /* Reset básico */
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #18191c;
+      color: #ddd;
+    }
+
+    /* Container lateral fixo */
+    #chat {
+      position: fixed;
+      top: 0; bottom: 0; right: 0;
+      width: 320px;
+      background: #2f3136;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -4px 0 8px rgba(0,0,0,0.5);
+      padding: 16px;
+    }
+
+    /* Cabeçalho da sala */
+    #chat header {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      color: #fff;
+      border-bottom: 1px solid #444;
+      padding-bottom: 8px;
+    }
+
+    /* Área das mensagens */
+    #mensagens {
+      flex-grow: 1;
+      overflow-y: auto;
+      background: #202225;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      line-height: 1.3;
+    }
+
+    /* Cada mensagem */
+    #mensagens div {
+      margin-bottom: 8px;
+    }
+    #mensagens strong {
+      color: #7289da;
+    }
+
+    /* Área do input */
+    #input-area {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px; /* espaço para o botão abaixo */
+    }
+
+    #mensagem {
+      flex-grow: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      background: #40444b;
+      color: #ddd;
+      font-size: 1rem;
+    }
+
+    #mensagem:focus {
+      outline: none;
+      background: #5865f2;
+      color: white;
+    }
+
+    button {
+      background: #5865f2;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background: #4752c4;
+    }
+
+    /* Botão para abrir chat externo */
+    #btn-chat-externo {
+      width: 100%;
+      margin-bottom: 12px;
+      background: #43b581; /* verde Discord */
+    }
+
+    #btn-chat-externo:hover {
+      background: #389e6d;
+    }
+
+    /* Container para áudio */
+    #audio-container {
+      margin-top: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #202225;
+      border-radius: 8px;
+      padding: 10px;
+      color: #bbb;
+      font-size: 0.9rem;
+    }
+
+    #audio-container audio {
+      width: 100%;
+      margin-top: 5px;
+      border-radius: 6px;
+      background: #40444b;
+    }
+
+    /* Canvas para visualizador */
+    #visualizer {
+      width: 100%;
+      height: 60px;
+      background: #18191c;
+      border-radius: 6px;
+      margin-top: 10px;
+      display: none; /* só mostra quando microfone ativo */
+    }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <header>💬 Sala: <span id="sala"></span></header>
+    <div>👤 Você: <span id="nome"></span></div>
+    <div id="mensagens"></div>
+    <div id="input-area">
+      <input id="mensagem" placeholder="Digite sua mensagem..." autocomplete="off" />
+      <button onclick="enviar()">Enviar</button>
+    </div>
+
+    <!-- Botão para abrir chat externo -->
+    <button id="btn-chat-externo">Abrir chat externo</button>
+
+    <button id="btn-microfone" style="margin-top:12px;">Ativar Microfone</button>
+    <canvas id="visualizer"></canvas>
+    <div id="audio-container">
+      <h4>Áudio dos participantes</h4>
+    </div>
+  </div>
+
+  <!-- Lib simple-peer para WebRTC P2P -->
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const nome = "{{ nome }}";
+    const sala = "{{ sala }}";
+
+    document.getElementById("nome").textContent = nome;
+    document.getElementById("sala").textContent = sala;
+
+    const socket = io();
+
+    // Botão abrir chat externo
+    document.getElementById("btn-chat-externo").addEventListener("click", () => {
+      if (!sala) {
+        alert("Você precisa estar em uma sala para abrir o chat externo.");
+        return;
+      }
+      // Redireciona passando a sala na URL
+      window.location.href = `/chat-externo?sala=${encodeURIComponent(sala)}`;
+    });
+
+    // --- restante do seu script original segue aqui ---
+    
+    // Chat texto
+    socket.on('mensagem', data => {
+      const div = document.createElement("div");
+      div.innerHTML = `<strong>${data.nome}</strong> [${data.hora}]: ${data.mensagem}`;
+      document.getElementById("mensagens").appendChild(div);
+      const mensagensDiv = document.getElementById("mensagens");
+      mensagensDiv.scrollTop = mensagensDiv.scrollHeight;
+    });
+
+    function enviar() {
+      const input = document.getElementById("mensagem");
+      const mensagem = input.value.trim();
+      if (!mensagem) return;
+      socket.emit("mensagem", { nome, sala, mensagem });
+      input.value = "";
+      input.focus();
+    }
+
+    // Função tocar som bolha, WebRTC, etc (não alterei, mantém seu código)
+    // ...
+
+  </script>
+</body>
+</html>
